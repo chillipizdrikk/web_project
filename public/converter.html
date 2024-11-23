@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Factorial Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4caf50;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .button-container button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+
+        .form-container {
+            margin-bottom: 20px;
+        }
+
+        .form-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-container .progress-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .progress-container .progress {
+            width: 80%;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-container .progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.25s;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+        .result-container p {
+            font-weight: bold;
+        }
+
+        .history-container {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .history-container h2 {
+            color: #4caf50;
+        }
+
+        .history-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .history-container ul li {
+            background-color: #f3f3f3;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Factorial Converter</h1>
+        <div class="button-container">
+            <button id="logoutButton">Вийти</button>
+            <button id="historyButton">Історія задач</button>
+        </div>
+        <div class="form-container">
+            <form id="taskForm">
+                <label for="number">Введіть число:</label>
+                <input type="number" id="number" name="number" required>
+                <button type="submit">Обчислити</button>
+            </form>
+        </div>
+        <div class="progress-container" id="progressContainer"></div>
+        <div class="result-container" id="resultContainer"></div>
+    </div>
+    <script>
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('Будь ласка, увійдіть, щоб скористатися конвертером.');
+            window.location.href = 'login.html';
+        }
+
+        $('#logoutButton').click(function () {
+            localStorage.removeItem('authToken');
+            window.location.href = 'login.html';
+        });
+
+        const socket = io();
+
+        $(document).on('click', '.cancelButton', function () {
+            const number = $(this).data('number');
+            socket.emit('cancelTask', { number });
+        });
+
+        $('#taskForm').submit(function (event) {
+            event.preventDefault();
+            const number = $('#number').val();
+
+            if (number <= 0 || number > 500) {
+                alert('Введіть число від 1 до 500.');
+                return;
+            }
+
+            const progressContainer = $('#progressContainer');
+            const progressBar = $('<div>', { class: 'progress' })
+                .append($('<div>', { class: 'progress-bar', id: 'progressBar-' + number }));
+            const cancelButton = $('<button>', {
+                class: 'cancelButton',
+                text: 'Скасувати',
+                'data-number': number
+            });
+            const progressWrapper = $('<div>', { class: 'progress-wrapper' })
+                .append(progressBar)
+                .append(cancelButton);
+
+            progressContainer.append(progressWrapper);
+
+            const resultContainer = $('#resultContainer');
+            const resultDiv = $('<div>', { id: 'result-' + number });
+            resultContainer.append(resultDiv);
+
+            socket.emit('startTask', { number, authToken });
+
+            socket.on('progressUpdate', function (data) {
+                const progressBar = $('#progressBar-' + data.number);
+                if (progressBar.length) {
+                    progressBar.css('width', data.progress + '%').text(data.progress + '%');
+                }
+            });
+
+            socket.on('taskComplete', function (data) {
+                const progressBar = $('#progressBar-' + data.number);
+                if (progressBar.length) {
+                    progressBar.css('width', '100%').text('100%');
+                }
+                const resultDiv = $('#result-' + data.number);
+                if (resultDiv.length) {
+                    resultDiv.text(`Результат для числа ${data.number}: ${data.result}`);
+                }
+                $(`#progressBar-${data.number}`).siblings('.cancelButton').remove();
+            });
+
+            socket.on('taskCancelled', function (data) {
+                const progressBar = $('#progressBar-' + data.number);
+                if (progressBar.length) {
+                    progressBar.css('width', '0%').text('0%');
+                }
+                alert(`Task ${data.number} cancelled`);
+                $(`#progressBar-${data.number}`).siblings('.cancelButton').remove();
+            });
+        });
+
+        $('#historyButton').click(function () {
+            window.location.href = 'history.html';
+        });
+    </script>
+</body>
+
+</html>

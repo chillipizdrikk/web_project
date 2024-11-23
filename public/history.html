@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Історія задач</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4caf50;
+            text-align: center;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .button-container button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+
+        .history-container {
+            margin-top: 20px;
+        }
+
+        .history-container h2 {
+            color: #4caf50;
+        }
+
+        .history-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .history-container ul li {
+            background-color: #f3f3f3;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Історія задач</h1>
+    <div class="button-container">
+        <button id="backButton">Повернутися</button>
+    </div>
+    <div class="history-container" id="historyContainer">
+        <h2>Історія виконаних задач</h2>
+        <ul id="historyList"></ul>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            const authToken = localStorage.getItem('authToken');
+
+            if (!authToken) {
+                alert('Будь ласка, увійдіть, щоб переглянути історію задач.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            $('#backButton').click(function () {
+                window.location.href = 'converter.html';
+            });
+
+            $.ajax({
+                url: '/api/tasks/history',
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                },
+                success: function (data) {
+                    const historyList = $('#historyList');
+                    historyList.empty();
+                    data.forEach(task => {
+                        const listItem = $('<li>').text(`Число: ${task.number}, Результат: ${task.result}, Статус: ${task.status}`);
+                        historyList.append(listItem);
+                    });
+                },
+                error: function () {
+                    alert('Не вдалося завантажити історію задач.');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
