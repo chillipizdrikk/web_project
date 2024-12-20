@@ -7,7 +7,7 @@ const Task = sequelize.define('Task', {
     allowNull: false
   },
   result: {
-    type: DataTypes.STRING, // Заміна типу на STRING
+    type: DataTypes.STRING, 
     allowNull: true
   },
   status: {

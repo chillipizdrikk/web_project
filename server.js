@@ -9,6 +9,12 @@ const socketIo = require('socket.io');
 const Task = require('./models/Task');
 
 const app = express();
+
+app.use((req, res, next) => {
+  console.log(`Request received on server with PORT: ${PORT}`);
+  next();
+});
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -42,6 +48,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Set up routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
+
+// Add route for root URL
+app.get('/', (req, res) => {
+  res.send('Welcome to the Factorial Converter!');
+});
 
 // Maximum number of concurrent tasks
 const MAX_CONCURRENT_TASKS = 5;
@@ -159,3 +170,4 @@ server.listen(PORT, () => {
       console.error('Database synchronization failed:', error);
     });
 });
+ 
