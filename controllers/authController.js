@@ -10,7 +10,7 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    console.log('Registering user with:', { username, email, password }); // Додамо логування отриманих даних
+    console.log('Registering user with:', { username, email, password });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ username, email, password: hashedPassword });
